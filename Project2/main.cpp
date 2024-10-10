@@ -59,13 +59,18 @@ GLuint g_keyboard_extra_texture_id;
 GLuint g_font_texture_id;
 
 float g_paddle_speed = 1.75f,
-      g_ball_speed = 1.5f;
+      g_ball_speed = 2.0f;
 bool p1Upper = false,
      p2Upper = false,
      p1Lower = false,
      p2Lower = false,
+     ballLower = false,
+     ballUpper = false,
      playerInput = false,
-     twoPlayerMode = false;
+     intialDirection = true,
+     twoPlayerMode = true,
+     player1Score = false,
+     player2Score = false;
 
 void draw_sprite_from_texture_atlas(ShaderProgram *program, GLuint texture_id, int index,
                                     int rows, int cols);
@@ -107,8 +112,9 @@ GLuint load_texture(const char* filepath);
 void draw_object(glm::mat4 &object_model_matrix, GLuint &object_texture_id);
 
 /* Self-made funcions */
-void checkPaddleBounds(glm::vec3 object, bool &upper, bool &lower);
+void checkYBounds(glm::vec3 object, bool &upper, bool &lower);
 bool checkCollision(glm::vec3 object1, glm::vec3 object2);
+int checkScore(glm::vec3 object);
 
 void draw_sprite_from_texture_atlas(ShaderProgram *shaderProgram, GLuint texture_id, int index, int rows, int cols)
 {
@@ -249,7 +255,7 @@ GLuint load_texture(const char* filepath)
 }
 
 /* Self-made */
-void checkPaddleBounds(glm::vec3 object, bool &upper, bool &lower) {
+void checkYBounds(glm::vec3 object, bool &upper, bool &lower) {
     if (object.y > 3.2f) {
         upper = true;
     } else if (object.y < -3.2f) {
@@ -272,6 +278,17 @@ bool checkCollision(glm::vec3 object1, glm::vec3 object2) {
         return false;
     }
 }
+
+int checkScore(glm::vec3 object) {
+    if (object.x > 5.0f) {
+        return 1;   // player 2 scored
+    }
+    else if (object.x < -5.0f) {
+        return -1;  // player 1 scored
+    }
+    return 0;       // no score
+}
+
 
 
 
@@ -324,9 +341,7 @@ void initialise()
 
 void process_input()
 {
-    g_playerOne_movement = glm::vec3(0.0f);
     g_playerTwo_movement = glm::vec3(0.0f);
-
     SDL_Event event;
     while (SDL_PollEvent(&event))
     {
@@ -337,46 +352,67 @@ void process_input()
                 switch (event.key.keysym.sym)
                 {
                     case SDLK_q: g_app_status = TERMINATED; break;
+                    case SDLK_SPACE: playerInput = true; break;
+                    case SDLK_t: twoPlayerMode = !twoPlayerMode; break;
                     default: break;
                 }
-            case SDLK_SPACE: playerInput = true; break;
-            case SDLK_t: twoPlayerMode = !twoPlayerMode; break;
-
             default: break;
         }
     }
 
     const Uint8 *key_state = SDL_GetKeyboardState(NULL);
     
-    if (key_state[SDL_SCANCODE_W] && !p1Upper)
-    {
-        g_playerOne_movement.y = 1.0f;
-    }
-    else if (key_state[SDL_SCANCODE_S] && !p1Lower)
-    {
-        g_playerOne_movement.y = -1.0f;
-    }
-    
-    if (key_state[SDL_SCANCODE_UP] && !p2Upper)
-    {
-        g_playerTwo_movement.y = 1.0f;
-    }
-    else if (key_state[SDL_SCANCODE_DOWN] && !p2Lower)
-    {
-        g_playerTwo_movement.y = -1.0f;
-    }
-    
-    if (key_state[SDL_SCANCODE_LEFT])
-    {
-        g_ball_movement.x = -1.0f;
-    }
-    else if (key_state[SDL_SCANCODE_RIGHT]) {
-        g_ball_movement.x = 1.0f;
-    }
+    if (!player1Score && !player2Score){ //No inputs after a player wins
+        if (twoPlayerMode) { // Player contorl
+            g_playerOne_movement = glm::vec3(0.0f);
+            intialDirection = true;
+            if (key_state[SDL_SCANCODE_W] && !p1Upper)
+            {
+                g_playerOne_movement.y = 1.0f;
+            }
+            else if (key_state[SDL_SCANCODE_S] && !p1Lower)
+            {
+                g_playerOne_movement.y = -1.0f;
+            }
+        }
+        else { //AI contorl
+            if (intialDirection) {
+                g_playerOne_movement.y = 1.0f;
+                intialDirection = false;
+            }
+            if (p1Lower) {
+                g_playerOne_movement.y = 1.0f;
+            }
+            else if (p1Upper) {
+                g_playerOne_movement.y = -1.0f;
+            }
+        }
+        
+        if (key_state[SDL_SCANCODE_UP] && !p2Upper)
+        {
+            g_playerTwo_movement.y = 1.0f;
+        }
+        else if (key_state[SDL_SCANCODE_DOWN] && !p2Lower)
+        {
+            g_playerTwo_movement.y = -1.0f;
+        }
+        
+        if (key_state[SDL_SCANCODE_LEFT])
+        {
+            g_ball_movement.x = -1.0f;
+        }
+        else if (key_state[SDL_SCANCODE_RIGHT]) {
+            g_ball_movement.x = 1.0f;
+        }
 
-    if (glm::length(g_ball_movement) > 1.0f)
-    {
-        g_ball_movement = glm::normalize(g_ball_movement);
+        if (glm::length(g_ball_movement) > 1.0f)
+        {
+            g_ball_movement = glm::normalize(g_ball_movement);
+        }
+    }
+    else { // Stop all current movement
+        g_playerOne_movement = glm::vec3(0.0f);
+        g_playerTwo_movement = glm::vec3(0.0f);
     }
     
 }
@@ -389,18 +425,30 @@ void update()
     float delta_time = ticks - previous_ticks;
     previous_ticks = ticks;
     
-    
-    
     /* GAME LOGIC */
     g_ball_position += g_ball_movement * g_ball_speed * delta_time;
     g_playerTwo_position += g_playerTwo_movement * g_paddle_speed * delta_time;
     g_playerOne_position += g_playerOne_movement * g_paddle_speed * delta_time;
     
-    // Check y bounds of paddles
-    checkPaddleBounds(g_playerOne_position, p1Upper, p1Lower);
-    checkPaddleBounds(g_playerTwo_position, p2Upper, p2Lower);
-
-
+    // Check y bounds of objects
+    checkYBounds(g_playerOne_position, p1Upper, p1Lower);
+    checkYBounds(g_playerTwo_position, p2Upper, p2Lower);
+    checkYBounds(g_ball_position, ballUpper, ballLower);
+    
+    if(ballUpper) {
+        g_ball_movement.y = -1.0f;
+    }
+    else if(ballLower) {
+        g_ball_movement.y = 1.0f;
+    }
+    
+    if (checkScore(g_ball_position) == 1) {
+        player2Score = true;
+    }
+    else if(checkScore(g_ball_position) == -1) {
+        player1Score = true;
+    }
+    
     
     /* Model matrix reset */
     g_ball_matrix = glm::mat4(1.0f);
@@ -419,10 +467,13 @@ void update()
     g_playerOne_matrix = glm::scale(g_playerOne_matrix, INIT_PADDLE_SCALE);
     
     if (checkCollision(g_playerOne_position, g_ball_position)) {
-        g_ball_movement.x *= -1.0f;
+        g_ball_movement.x = 1.0f;
+        g_ball_movement.y = 1.0f;
+        
     }
     if (checkCollision(g_playerTwo_position, g_ball_position)) {
-        g_ball_movement.x *= -1.0f;
+        g_ball_movement.x = -1.0f;
+        g_ball_movement.y = -1.0f;
     }
 
 }
@@ -455,10 +506,6 @@ void render()
                                    20,
                                    KEYBOARD_EXTRA_DIMENSIONS_ROWS,  KEYBOARD_EXTRA_DIMENSIONS_COLS);
     
-
-
-    draw_text(&g_shader_program, g_font_texture_id, "Game, Over!", 0.5f, 0.05f,
-              glm::vec3(-3.0f, 3.0f, 0.0f));
 
     SDL_GL_SwapWindow(g_display_window);
 }

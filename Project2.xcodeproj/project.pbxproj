@@ -8,10 +8,8 @@
 
 /* Begin PBXBuildFile section */
 		BFC5E5FB2CB790B7008DF477 /* font1.png in CopyFiles */ = {isa = PBXBuildFile; fileRef = BFC5E5F52CB78FBD008DF477 /* font1.png */; };
-		BFC5E5FC2CB790B8008DF477 /* george_0.png in CopyFiles */ = {isa = PBXBuildFile; fileRef = BFC5E5F62CB78FBD008DF477 /* george_0.png */; };
 		BFC5E5FD2CB790BA008DF477 /* Keyboard Extras.png in CopyFiles */ = {isa = PBXBuildFile; fileRef = BFC5E5F72CB78FBD008DF477 /* Keyboard Extras.png */; };
 		BFC5E5FE2CB790BC008DF477 /* Keyboard Letters and Symbols.png in CopyFiles */ = {isa = PBXBuildFile; fileRef = BFC5E5F82CB78FBD008DF477 /* Keyboard Letters and Symbols.png */; };
-		BFC5E5FF2CB790BD008DF477 /* shield.png in CopyFiles */ = {isa = PBXBuildFile; fileRef = BFC5E5F92CB78FBD008DF477 /* shield.png */; };
 		DBDF1B532323DE3F007CECB1 /* main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = DBDF1B522323DE3F007CECB1 /* main.cpp */; };
 		DBDF1B5E2323DE8D007CECB1 /* ShaderProgram.cpp in Sources */ = {isa = PBXBuildFile; fileRef = DBDF1B5D2323DE8D007CECB1 /* ShaderProgram.cpp */; };
 		DBDF1B612323DE9E007CECB1 /* shaders in CopyFiles */ = {isa = PBXBuildFile; fileRef = DBDF1B5C2323DE8D007CECB1 /* shaders */; };
@@ -31,8 +29,6 @@
 			files = (
 				DBDF1B612323DE9E007CECB1 /* shaders in CopyFiles */,
 				BFC5E5FB2CB790B7008DF477 /* font1.png in CopyFiles */,
-				BFC5E5FF2CB790BD008DF477 /* shield.png in CopyFiles */,
-				BFC5E5FC2CB790B8008DF477 /* george_0.png in CopyFiles */,
 				BFC5E5FE2CB790BC008DF477 /* Keyboard Letters and Symbols.png in CopyFiles */,
 				BFC5E5FD2CB790BA008DF477 /* Keyboard Extras.png in CopyFiles */,
 			);
@@ -42,10 +38,8 @@
 
 /* Begin PBXFileReference section */
 		BFC5E5F52CB78FBD008DF477 /* font1.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = font1.png; sourceTree = "<group>"; };
-		BFC5E5F62CB78FBD008DF477 /* george_0.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = george_0.png; sourceTree = "<group>"; };
 		BFC5E5F72CB78FBD008DF477 /* Keyboard Extras.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "Keyboard Extras.png"; sourceTree = "<group>"; };
 		BFC5E5F82CB78FBD008DF477 /* Keyboard Letters and Symbols.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "Keyboard Letters and Symbols.png"; sourceTree = "<group>"; };
-		BFC5E5F92CB78FBD008DF477 /* shield.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = shield.png; sourceTree = "<group>"; };
 		DBDF1B4F2323DE3F007CECB1 /* Project2 */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = Project2; sourceTree = BUILT_PRODUCTS_DIR; };
 		DBDF1B522323DE3F007CECB1 /* main.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = main.cpp; sourceTree = "<group>"; };
 		DBDF1B592323DE8D007CECB1 /* ShaderProgram.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ShaderProgram.h; sourceTree = "<group>"; };
@@ -103,10 +97,8 @@
 				DBDF1B5C2323DE8D007CECB1 /* shaders */,
 				DBDF1B5A2323DE8D007CECB1 /* stb_image.h */,
 				DBDF1B522323DE3F007CECB1 /* main.cpp */,
-				BFC5E5F62CB78FBD008DF477 /* george_0.png */,
 				BFC5E5F72CB78FBD008DF477 /* Keyboard Extras.png */,
 				BFC5E5F82CB78FBD008DF477 /* Keyboard Letters and Symbols.png */,
-				BFC5E5F92CB78FBD008DF477 /* shield.png */,
 			);
 			path = Project2;
 			sourceTree = "<group>";
