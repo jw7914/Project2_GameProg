@@ -75,8 +75,7 @@ bool p1Upper = false,
 
 void draw_sprite_from_texture_atlas(ShaderProgram *program, GLuint texture_id, int index,
                                     int rows, int cols);
-void draw_text(ShaderProgram *shader_program, GLuint font_texture_id, std::string text,
-               float font_size, float spacing, glm::vec3 position);
+
 /* -------------------------- NEW STUFF ABOVE -------------------------- */
 
 SDL_Window* g_display_window = nullptr;
@@ -86,6 +85,8 @@ ShaderProgram g_shader_program = ShaderProgram();
 
 glm::mat4 g_view_matrix,
           g_ball_matrix,
+          letter_matrix,
+          startGame_matrix,
           g_playerOne_matrix,
           g_playerTwo_matrix,
           g_projection_matrix;
@@ -120,6 +121,9 @@ void checkYBounds(glm::vec3 object, bool &upper, bool &lower);
 bool checkCollision(glm::vec3 object1, glm::vec3 object2);
 int checkScore(glm::vec3 object);
 void startGame();
+void drawGameOver();
+void drawSpaceToStart();
+void drawPlayerWins();
 
 void draw_sprite_from_texture_atlas(ShaderProgram *shaderProgram, GLuint texture_id, int index, int rows, int cols)
 {
@@ -159,73 +163,6 @@ void draw_sprite_from_texture_atlas(ShaderProgram *shaderProgram, GLuint texture
 
     glDisableVertexAttribArray(shaderProgram->get_position_attribute());
     glDisableVertexAttribArray(shaderProgram->get_tex_coordinate_attribute());
-}
-
-
-void draw_text(ShaderProgram *shader_program, GLuint font_texture_id, std::string text,
-               float font_size, float spacing, glm::vec3 position)
-{
-    // Scale the size of the fontbank in the UV-plane
-    // We will use this for spacing and positioning
-    float width = 1.0f / FONTBANK_SIZE;
-    float height = 1.0f / FONTBANK_SIZE;
-
-    // Instead of having a single pair of arrays, we'll have a series of pairs—one for
-    // each character. Don't forget to include <vector>!
-    std::vector<float> vertices;
-    std::vector<float> texture_coordinates;
-
-    // For every character...
-    for (int i = 0; i < text.size(); i++) {
-        // 1. Get their index in the spritesheet, as well as their offset (i.e. their
-        //    position relative to the whole sentence)
-        int spritesheet_index = (int) text[i];  // ascii value of character
-        float offset = (font_size + spacing) * i;
-
-        // 2. Using the spritesheet index, we can calculate our U- and V-coordinates
-        float u_coordinate = (float) (spritesheet_index % FONTBANK_SIZE) / FONTBANK_SIZE;
-        float v_coordinate = (float) (spritesheet_index / FONTBANK_SIZE) / FONTBANK_SIZE;
-
-        // 3. Inset the current pair in both vectors
-        vertices.insert(vertices.end(), {
-            offset + (-0.5f * font_size), 0.5f * font_size,
-            offset + (-0.5f * font_size), -0.5f * font_size,
-            offset + (0.5f * font_size), 0.5f * font_size,
-            offset + (0.5f * font_size), -0.5f * font_size,
-            offset + (0.5f * font_size), 0.5f * font_size,
-            offset + (-0.5f * font_size), -0.5f * font_size,
-        });
-
-        texture_coordinates.insert(texture_coordinates.end(), {
-            u_coordinate, v_coordinate,
-            u_coordinate, v_coordinate + height,
-            u_coordinate + width, v_coordinate,
-            u_coordinate + width, v_coordinate + height,
-            u_coordinate + width, v_coordinate,
-            u_coordinate, v_coordinate + height,
-        });
-    }
-
-    // 4. And render all of them using the pairs
-    glm::mat4 model_matrix = glm::mat4(1.0f);
-    model_matrix = glm::translate(model_matrix, position);
-
-    shader_program->set_model_matrix(model_matrix);
-    glUseProgram(shader_program->get_program_id());
-
-    glVertexAttribPointer(shader_program->get_position_attribute(), 2, GL_FLOAT, false, 0,
-                          vertices.data());
-    glEnableVertexAttribArray(shader_program->get_position_attribute());
-
-    glVertexAttribPointer(shader_program->get_tex_coordinate_attribute(), 2, GL_FLOAT,
-                          false, 0, texture_coordinates.data());
-    glEnableVertexAttribArray(shader_program->get_tex_coordinate_attribute());
-
-    glBindTexture(GL_TEXTURE_2D, font_texture_id);
-    glDrawArrays(GL_TRIANGLES, 0, (int) (text.size() * 6));
-
-    glDisableVertexAttribArray(shader_program->get_position_attribute());
-    glDisableVertexAttribArray(shader_program->get_tex_coordinate_attribute());
 }
 
 
@@ -312,6 +249,151 @@ void startGame() {
     g_ball_movement.x = 1.0f;
 }
 
+void drawGameOver() {
+    letter_matrix = glm::mat4(1.0f);
+    letter_matrix = glm::translate(letter_matrix, glm::vec3(-1.25f, 3.0f, 0.0f));
+    letter_matrix = glm::scale(letter_matrix, glm::vec3(0.5f, 0.5f, 0.0f));
+    g_shader_program.set_model_matrix(letter_matrix);
+
+    // Draw each letter in "GAME"
+    draw_sprite_from_texture_atlas(&g_shader_program, g_keyboard_texture_id, 78, KEYBOARD_DIMENSIONS_ROWS, KEYBOARD_DIMENSIONS_COLS); // G
+    letter_matrix = glm::translate(letter_matrix, glm::vec3(0.7f, 0.0f, 0.0f));
+    g_shader_program.set_model_matrix(letter_matrix);
+    
+    draw_sprite_from_texture_atlas(&g_shader_program, g_keyboard_texture_id, 72, KEYBOARD_DIMENSIONS_ROWS, KEYBOARD_DIMENSIONS_COLS); // A
+    letter_matrix = glm::translate(letter_matrix, glm::vec3(0.7f, 0.0f, 0.0f));
+    g_shader_program.set_model_matrix(letter_matrix);
+    
+    draw_sprite_from_texture_atlas(&g_shader_program, g_keyboard_texture_id, 84, KEYBOARD_DIMENSIONS_ROWS, KEYBOARD_DIMENSIONS_COLS); // M
+    letter_matrix = glm::translate(letter_matrix, glm::vec3(0.7f, 0.0f, 0.0f));
+    g_shader_program.set_model_matrix(letter_matrix);
+
+    draw_sprite_from_texture_atlas(&g_shader_program, g_keyboard_texture_id, 76, KEYBOARD_DIMENSIONS_ROWS, KEYBOARD_DIMENSIONS_COLS); // E
+    
+    // Adjust position add a space
+    letter_matrix = glm::translate(letter_matrix, glm::vec3(1.0f, 0.0f, 0.0f));
+    g_shader_program.set_model_matrix(letter_matrix);
+
+    // Draw each letter in "OVER"
+    draw_sprite_from_texture_atlas(&g_shader_program, g_keyboard_texture_id, 86, KEYBOARD_DIMENSIONS_ROWS, KEYBOARD_DIMENSIONS_COLS); // O
+    letter_matrix = glm::translate(letter_matrix, glm::vec3(0.7f, 0.0f, 0.0f));
+    g_shader_program.set_model_matrix(letter_matrix);
+
+    draw_sprite_from_texture_atlas(&g_shader_program, g_keyboard_texture_id, 93, KEYBOARD_DIMENSIONS_ROWS, KEYBOARD_DIMENSIONS_COLS); // V
+    letter_matrix = glm::translate(letter_matrix, glm::vec3(0.7f, 0.0f, 0.0f));
+    g_shader_program.set_model_matrix(letter_matrix);
+
+    draw_sprite_from_texture_atlas(&g_shader_program, g_keyboard_texture_id, 76, KEYBOARD_DIMENSIONS_ROWS, KEYBOARD_DIMENSIONS_COLS); // E
+    letter_matrix = glm::translate(letter_matrix, glm::vec3(0.7f, 0.0f, 0.0f));
+    g_shader_program.set_model_matrix(letter_matrix);
+
+    draw_sprite_from_texture_atlas(&g_shader_program, g_keyboard_texture_id, 89, KEYBOARD_DIMENSIONS_ROWS, KEYBOARD_DIMENSIONS_COLS); // R
+}
+
+void drawSpaceToStart() {
+    letter_matrix = glm::mat4(1.0f);
+    letter_matrix = glm::translate(letter_matrix, glm::vec3(-1.35f, 2.0f, 0.0f));
+    letter_matrix = glm::scale(letter_matrix, glm::vec3(0.5f, 0.5f, 0.0f));
+    g_shader_program.set_model_matrix(letter_matrix);
+
+    // Draw "SPACE"
+    draw_sprite_from_texture_atlas(&g_shader_program, g_keyboard_extra_texture_id, 26, KEYBOARD_EXTRA_DIMENSIONS_ROWS, KEYBOARD_EXTRA_DIMENSIONS_COLS);
+    letter_matrix = glm::translate(letter_matrix, glm::vec3(0.7f, 0.0f, 0.0f));
+
+    letter_matrix = glm::translate(letter_matrix, glm::vec3(0.5f, 0.0f, 0.0f)); // Add extra space
+    g_shader_program.set_model_matrix(letter_matrix);
+
+    // Draw "TO"
+    draw_sprite_from_texture_atlas(&g_shader_program, g_keyboard_texture_id, 91, KEYBOARD_DIMENSIONS_ROWS, KEYBOARD_DIMENSIONS_COLS); // T
+    letter_matrix = glm::translate(letter_matrix, glm::vec3(0.7f, 0.0f, 0.0f));
+    g_shader_program.set_model_matrix(letter_matrix);
+
+    draw_sprite_from_texture_atlas(&g_shader_program, g_keyboard_texture_id, 86, KEYBOARD_DIMENSIONS_ROWS, KEYBOARD_DIMENSIONS_COLS); // O
+    letter_matrix = glm::translate(letter_matrix, glm::vec3(1.0f, 0.0f, 0.0f)); // Add extra space
+    g_shader_program.set_model_matrix(letter_matrix);
+
+    // Draw "START"
+    draw_sprite_from_texture_atlas(&g_shader_program, g_keyboard_texture_id, 90, KEYBOARD_DIMENSIONS_ROWS, KEYBOARD_DIMENSIONS_COLS); // S
+    letter_matrix = glm::translate(letter_matrix, glm::vec3(0.7f, 0.0f, 0.0f));
+    g_shader_program.set_model_matrix(letter_matrix);
+
+    draw_sprite_from_texture_atlas(&g_shader_program, g_keyboard_texture_id, 91, KEYBOARD_DIMENSIONS_ROWS, KEYBOARD_DIMENSIONS_COLS); // T
+    letter_matrix = glm::translate(letter_matrix, glm::vec3(0.7f, 0.0f, 0.0f));
+    g_shader_program.set_model_matrix(letter_matrix);
+
+    draw_sprite_from_texture_atlas(&g_shader_program, g_keyboard_texture_id, 72, KEYBOARD_DIMENSIONS_ROWS, KEYBOARD_DIMENSIONS_COLS); // A
+    letter_matrix = glm::translate(letter_matrix, glm::vec3(0.7f, 0.0f, 0.0f));
+    g_shader_program.set_model_matrix(letter_matrix);
+
+    draw_sprite_from_texture_atlas(&g_shader_program, g_keyboard_texture_id, 89, KEYBOARD_DIMENSIONS_ROWS, KEYBOARD_DIMENSIONS_COLS); // R
+    letter_matrix = glm::translate(letter_matrix, glm::vec3(0.7f, 0.0f, 0.0f));
+    g_shader_program.set_model_matrix(letter_matrix);
+
+    draw_sprite_from_texture_atlas(&g_shader_program, g_keyboard_texture_id, 91, KEYBOARD_DIMENSIONS_ROWS, KEYBOARD_DIMENSIONS_COLS); // T
+}
+
+void drawPlayerWins(int playerNumber) {
+    glm::mat4 letter_matrix = glm::mat4(1.0f);
+    letter_matrix = glm::translate(letter_matrix, glm::vec3(-2.0f, 2.5f, 0.0f));
+    letter_matrix = glm::scale(letter_matrix, glm::vec3(0.5f, 0.5f, 0.0f)); // Scale letters
+    g_shader_program.set_model_matrix(letter_matrix);
+
+    // Draw "PLAYER"
+    draw_sprite_from_texture_atlas(&g_shader_program, g_keyboard_texture_id, 31, KEYBOARD_DIMENSIONS_ROWS, KEYBOARD_DIMENSIONS_COLS); // P
+    letter_matrix = glm::translate(letter_matrix, glm::vec3(0.7f, 0.0f, 0.0f));
+    g_shader_program.set_model_matrix(letter_matrix);
+
+    draw_sprite_from_texture_atlas(&g_shader_program, g_keyboard_texture_id, 27, KEYBOARD_DIMENSIONS_ROWS, KEYBOARD_DIMENSIONS_COLS); // L
+    letter_matrix = glm::translate(letter_matrix, glm::vec3(0.7f, 0.0f, 0.0f));
+    g_shader_program.set_model_matrix(letter_matrix);
+
+    draw_sprite_from_texture_atlas(&g_shader_program, g_keyboard_texture_id, 16, KEYBOARD_DIMENSIONS_ROWS, KEYBOARD_DIMENSIONS_COLS); // A
+    letter_matrix = glm::translate(letter_matrix, glm::vec3(0.7f, 0.0f, 0.0f));
+    g_shader_program.set_model_matrix(letter_matrix);
+
+    draw_sprite_from_texture_atlas(&g_shader_program, g_keyboard_texture_id, 40, KEYBOARD_DIMENSIONS_ROWS, KEYBOARD_DIMENSIONS_COLS); // Y
+    letter_matrix = glm::translate(letter_matrix, glm::vec3(0.7f, 0.0f, 0.0f));
+    g_shader_program.set_model_matrix(letter_matrix);
+
+    draw_sprite_from_texture_atlas(&g_shader_program, g_keyboard_texture_id, 20, KEYBOARD_DIMENSIONS_ROWS, KEYBOARD_DIMENSIONS_COLS); // E
+    letter_matrix = glm::translate(letter_matrix, glm::vec3(0.7f, 0.0f, 0.0f));
+    g_shader_program.set_model_matrix(letter_matrix);
+
+    draw_sprite_from_texture_atlas(&g_shader_program, g_keyboard_texture_id, 33, KEYBOARD_DIMENSIONS_ROWS, KEYBOARD_DIMENSIONS_COLS); // R
+    g_shader_program.set_model_matrix(letter_matrix);
+
+    letter_matrix = glm::translate(letter_matrix, glm::vec3(1.0f, 0.0f, 0.0f));
+    g_shader_program.set_model_matrix(letter_matrix);
+
+    // Draw Player Number
+    if (playerNumber == 1) {
+        draw_sprite_from_texture_atlas(&g_shader_program, g_keyboard_texture_id, 4, KEYBOARD_DIMENSIONS_ROWS, KEYBOARD_DIMENSIONS_COLS);
+    }
+    else if (playerNumber == 2) {
+        draw_sprite_from_texture_atlas(&g_shader_program, g_keyboard_texture_id, 5, KEYBOARD_DIMENSIONS_ROWS, KEYBOARD_DIMENSIONS_COLS);
+    }
+    
+    letter_matrix = glm::translate(letter_matrix, glm::vec3(1.0f, 0.0f, 0.0f)); // Extra space
+    g_shader_program.set_model_matrix(letter_matrix);
+
+    // Draw "WINS"
+    draw_sprite_from_texture_atlas(&g_shader_program, g_keyboard_texture_id, 38, KEYBOARD_DIMENSIONS_ROWS, KEYBOARD_DIMENSIONS_COLS); // W
+    letter_matrix = glm::translate(letter_matrix, glm::vec3(0.7f, 0.0f, 0.0f));
+    g_shader_program.set_model_matrix(letter_matrix);
+
+    draw_sprite_from_texture_atlas(&g_shader_program, g_keyboard_texture_id, 24, KEYBOARD_DIMENSIONS_ROWS, KEYBOARD_DIMENSIONS_COLS); // I
+    letter_matrix = glm::translate(letter_matrix, glm::vec3(0.7f, 0.0f, 0.0f));
+    g_shader_program.set_model_matrix(letter_matrix);
+
+    draw_sprite_from_texture_atlas(&g_shader_program, g_keyboard_texture_id, 29, KEYBOARD_DIMENSIONS_ROWS, KEYBOARD_DIMENSIONS_COLS); // N
+    letter_matrix = glm::translate(letter_matrix, glm::vec3(0.7f, 0.0f, 0.0f));
+    g_shader_program.set_model_matrix(letter_matrix);
+
+    draw_sprite_from_texture_atlas(&g_shader_program, g_keyboard_texture_id, 34, KEYBOARD_DIMENSIONS_ROWS, KEYBOARD_DIMENSIONS_COLS); // S
+}
+
+
+
 
 
 
@@ -343,6 +425,7 @@ void initialise()
     g_ball_matrix   = glm::mat4(1.0f);
     g_playerOne_matrix  = glm::mat4(1.0f);
     g_playerTwo_matrix  = glm::mat4(1.0f);
+    letter_matrix     = glm::mat4(1.0f);
     g_view_matrix       = glm::mat4(1.0f);
     g_projection_matrix = glm::ortho(-5.0f, 5.0f, -3.75f, 3.75f, -1.0f, 1.0f);
 
@@ -384,7 +467,6 @@ void process_input()
                         if (!gameProgress) {
                             gameStart = true;
                         }
-                        
                         break;
                     default: break;
                 }
@@ -537,6 +619,7 @@ void render()
                                    42,
                                    KEYBOARD_DIMENSIONS_ROWS, KEYBOARD_DIMENSIONS_COLS);
     
+    
     g_shader_program.set_model_matrix(g_playerOne_matrix);
     draw_sprite_from_texture_atlas(&g_shader_program, g_keyboard_extra_texture_id,
                                    4,
@@ -546,17 +629,20 @@ void render()
     draw_sprite_from_texture_atlas(&g_shader_program, g_keyboard_extra_texture_id,
                                    20,
                                    KEYBOARD_EXTRA_DIMENSIONS_ROWS,  KEYBOARD_EXTRA_DIMENSIONS_COLS);
+
     if (player1Score) {
-        draw_text(&g_shader_program, g_font_texture_id, "Player One Wins", 0.5f, 0.05f,
-                  glm::vec3(-3.0f, 3.0f, 0.0f));
-        draw_text(&g_shader_program, g_font_texture_id, "Press Space To Replay", 0.5f, 0.05f,
-                  glm::vec3(-3.0f, 1.0f, 0.0f));
+        drawGameOver();
+        drawSpaceToStart();
+        drawPlayerWins(1);
     }
     else if (player2Score) {
-        draw_text(&g_shader_program, g_font_texture_id, "Player Two Wins", 0.5f, 0.05f,
-                  glm::vec3(-3.0f, 3.0f, 0.0f));
-        draw_text(&g_shader_program, g_font_texture_id, "Press Space To Replay", 0.5f, 0.05f,
-                  glm::vec3(-3.0f, 1.0f, 0.0f));
+        drawGameOver();
+        drawSpaceToStart();
+        drawPlayerWins(2);
+    }
+    
+    if (!gameProgress) {
+        drawSpaceToStart();
     }
     
 
