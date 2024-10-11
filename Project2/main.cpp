@@ -46,7 +46,6 @@ constexpr GLint NUMBER_OF_TEXTURES = 1,
                 LEVEL_OF_DETAIL    = 0,
                 TEXTURE_BORDER     = 0;
 
-/* -------------------------- NEW STUFF BELOW -------------------------- */
 constexpr int KEYBOARD_DIMENSIONS_COLS = 8;
 constexpr int KEYBOARD_DIMENSIONS_ROWS = 14;
 constexpr int KEYBOARD_EXTRA_DIMENSIONS_ROWS = 8;
@@ -60,12 +59,17 @@ GLuint g_font_texture_id;
 
 float g_paddle_speed = 2.0f,
       g_ball_speed = 4.0f;
+
 bool p1Upper = false,
      p2Upper = false,
      p1Lower = false,
      p2Lower = false,
-     ballLower = false,
-     ballUpper = false,
+     ballLower1 = false,
+     ballUpper1 = false,
+     ballLower2 = false,
+     ballUpper2 = false,
+     ballLower3 = false,
+     ballUpper3 = false,
      gameStart = false,
      gameProgress = false,
      intialDirection = true,
@@ -73,10 +77,10 @@ bool p1Upper = false,
      player1Score = false,
      player2Score = false;
 
+int numBalls = 1;
+
 void draw_sprite_from_texture_atlas(ShaderProgram *program, GLuint texture_id, int index,
                                     int rows, int cols);
-
-/* -------------------------- NEW STUFF ABOVE -------------------------- */
 
 SDL_Window* g_display_window = nullptr;
 AppStatus g_app_status = RUNNING;
@@ -84,7 +88,9 @@ AppStatus g_app_status = RUNNING;
 ShaderProgram g_shader_program = ShaderProgram();
 
 glm::mat4 g_view_matrix,
-          g_ball_matrix,
+          g_ball_matrix1,
+          g_ball_matrix2,
+          g_ball_matrix3,
           letter_matrix,
           startGame_matrix,
           g_playerOne_matrix,
@@ -97,13 +103,20 @@ glm::vec3 INIT_PADDLE_SCALE = glm::vec3(1.0f, 0.25f, 0.0f);
 glm::vec3 INIT_BALL_SCALE = glm::vec3(0.3f, 0.3f, 0.0f);
 glm::vec3 INIT_PLAYERONE_POS = glm::vec3(-4.5f, 0.0f, 0.0f);
 glm::vec3 INIT_PLAYERTWO_POS = glm::vec3(4.5f, 0.0f, 0.0f);
-glm::vec3 INIT_BALL_POS = glm::vec3(0.0f, 0.0f, 0.0f);
+glm::vec3 INIT_BALL_POS1 = glm::vec3(0.0f, 0.0f, 0.0f);
+glm::vec3 INIT_BALL_POS2 = glm::vec3(0.0f, 0.25f, 0.0f);
+glm::vec3 INIT_BALL_POS3 = glm::vec3(0.0f, -0.25f, 0.0f);
 
-glm::vec3 g_ball_position = glm::vec3(0.0f, 0.0f, 0.0f);
+
+glm::vec3 g_ball_position1 = glm::vec3(0.0f, 0.0f, 0.0f);
+glm::vec3 g_ball_position2 = glm::vec3(0.0f, 0.25, 0.0f);
+glm::vec3 g_ball_position3 = glm::vec3(0.0f, -0.25f, 0.0f);
 glm::vec3 g_playerOne_position = glm::vec3(-4.5f, 0.0f, 0.0f);
 glm::vec3 g_playerTwo_position = glm::vec3(4.5f, 0.0f, 0.0f);
 
-glm::vec3 g_ball_movement = glm::vec3(0.0f, 0.0f, 0.0f);
+glm::vec3 g_ball_movement1 = glm::vec3(0.0f, 0.0f, 0.0f);
+glm::vec3 g_ball_movement2 = glm::vec3(0.0f, 0.0f, 0.0f);
+glm::vec3 g_ball_movement3 = glm::vec3(0.0f, 0.0f, 0.0f);
 glm::vec3 g_playerOne_movement = glm::vec3(0.0f, 0.0f, 0.0f);
 glm::vec3 g_playerTwo_movement = glm::vec3(0.0f, 0.0f, 0.0f);
 
@@ -236,8 +249,12 @@ void startGame() {
     p2Upper = false;
     p1Lower = false;
     p2Lower = false;
-    ballLower = false;
-    ballUpper = false;
+    ballLower1 = false;
+    ballUpper1 = false;
+    ballLower2 = false;
+    ballUpper2 = false;
+    ballLower3 = false;
+    ballUpper3 = false;
     gameProgress = false;
     intialDirection = true;
     twoPlayerMode = true;
@@ -245,8 +262,13 @@ void startGame() {
     player2Score = false;
     g_playerOne_position = INIT_PLAYERONE_POS;
     g_playerTwo_position = INIT_PLAYERTWO_POS;
-    g_ball_position = INIT_BALL_POS;
-    g_ball_movement.x = 1.0f;
+    g_ball_position1 = INIT_BALL_POS1;
+    g_ball_position2 = INIT_BALL_POS2;
+    g_ball_position3 = INIT_BALL_POS3;
+    g_ball_movement1.x = 1.0f;
+    g_ball_movement2.x = -1.0f;
+    g_ball_movement3.x = 1.0f;
+
 }
 
 void drawGameOver() {
@@ -393,10 +415,6 @@ void drawPlayerWins(int playerNumber) {
 }
 
 
-
-
-
-
 void initialise()
 {
     SDL_Init(SDL_INIT_VIDEO);
@@ -422,7 +440,9 @@ void initialise()
 
     g_shader_program.load(V_SHADER_PATH, F_SHADER_PATH);
 
-    g_ball_matrix   = glm::mat4(1.0f);
+    g_ball_matrix1   = glm::mat4(1.0f);
+    g_ball_matrix2   = glm::mat4(1.0f);
+    g_ball_matrix3   = glm::mat4(1.0f);
     g_playerOne_matrix  = glm::mat4(1.0f);
     g_playerTwo_matrix  = glm::mat4(1.0f);
     letter_matrix     = glm::mat4(1.0f);
@@ -468,6 +488,21 @@ void process_input()
                             gameStart = true;
                         }
                         break;
+                    case SDLK_1:
+                        if (SDLK_1 && !gameProgress) {
+                            numBalls = 1;
+                        }
+                        break;
+                    case SDLK_2:
+                        if (SDLK_2 && !gameProgress) {
+                            numBalls = 2;
+                        }
+                        break;
+                    case SDLK_3:
+                        if (SDLK_3 && !gameProgress) {
+                            numBalls = 3;
+                        }
+                        break;
                     default: break;
                 }
             default: break;
@@ -511,23 +546,26 @@ void process_input()
             g_playerTwo_movement.y = -1.0f;
         }
         
-        if (key_state[SDL_SCANCODE_LEFT])
+        if (glm::length(g_ball_movement1) > 1.0f)
         {
-            g_ball_movement.x = -1.0f;
+            g_ball_movement1 = glm::normalize(g_ball_movement1);
         }
-        else if (key_state[SDL_SCANCODE_RIGHT]) {
-            g_ball_movement.x = 1.0f;
-        }
-
-        if (glm::length(g_ball_movement) > 1.0f)
+        if (glm::length(g_ball_movement2) > 1.0f)
         {
-            g_ball_movement = glm::normalize(g_ball_movement);
+            g_ball_movement1 = glm::normalize(g_ball_movement2);
+        }
+        if (glm::length(g_ball_movement2) > 1.0f)
+        {
+            g_ball_movement1 = glm::normalize(g_ball_movement2);
         }
     }
     else { // Stop all current movement
         g_playerOne_movement = glm::vec3(0.0f);
         g_playerTwo_movement = glm::vec3(0.0f);
-        g_ball_movement = glm::vec3(0.0f);
+        g_ball_movement1 = glm::vec3(0.0f);
+        g_ball_movement2 = glm::vec3(0.0f);
+        g_ball_movement3 = glm::vec3(0.0f);
+
     }
     
 }
@@ -546,59 +584,139 @@ void update()
         gameProgress = true;
     }
     
+    LOG(numBalls);
     /* GAME LOGIC */
-    g_ball_position += g_ball_movement * g_ball_speed * delta_time;
+    g_ball_position1 += g_ball_movement1 * g_ball_speed * delta_time;
     g_playerTwo_position += g_playerTwo_movement * g_paddle_speed * delta_time;
     g_playerOne_position += g_playerOne_movement * g_paddle_speed * delta_time;
     
     // Check y bounds of objects
     checkYBounds(g_playerOne_position, p1Upper, p1Lower);
     checkYBounds(g_playerTwo_position, p2Upper, p2Lower);
-    checkYBounds(g_ball_position, ballUpper, ballLower);
+    checkYBounds(g_ball_position1, ballUpper1, ballLower1);
     
-    if(ballUpper) {
-        g_ball_movement.y = -1.0f;
+    if(ballUpper1) {
+        g_ball_movement1.y = -1.0f;
     }
-    else if(ballLower) {
-        g_ball_movement.y = 1.0f;
+    else if(ballLower1) {
+        g_ball_movement1.y = 1.0f;
     }
     
-    if (checkScore(g_ball_position) == -1) {
+    if (checkScore(g_ball_position1) == -1) {
         player2Score = true;
         gameProgress = false;
     }
-    else if(checkScore(g_ball_position) == 1) {
+    else if(checkScore(g_ball_position1) == 1) {
         player1Score = true;
         gameProgress = false;
     }
     
     
     /* Model matrix reset */
-    g_ball_matrix = glm::mat4(1.0f);
+    g_ball_matrix1 = glm::mat4(1.0f);
+    g_ball_matrix2 = glm::mat4(1.0f);
+    g_ball_matrix3 = glm::mat4(1.0f);
     g_playerOne_matrix = glm::mat4(1.0f);
     g_playerTwo_matrix = glm::mat4(1.0f);
     
-
+    
     /* TRANSFORMATIONS */
-    g_ball_matrix = glm::translate(g_ball_matrix, g_ball_position);
+    g_ball_matrix1 = glm::translate(g_ball_matrix1, g_ball_position1);
     g_playerOne_matrix = glm::translate(g_playerOne_matrix, g_playerOne_position);
     g_playerTwo_matrix = glm::translate(g_playerTwo_matrix, g_playerTwo_position);
     g_playerOne_matrix = glm::rotate(g_playerOne_matrix, glm::radians(-90.0f), glm::vec3(0.0f,0.0f, 1.0f));
     g_playerTwo_matrix = glm::rotate(g_playerTwo_matrix, glm::radians(90.0f), glm::vec3(0.0f,0.0f, 1.0f));
-    g_ball_matrix = glm::scale(g_ball_matrix, INIT_BALL_SCALE);
+    g_ball_matrix1 = glm::scale(g_ball_matrix1, INIT_BALL_SCALE);
     g_playerTwo_matrix = glm::scale(g_playerTwo_matrix, INIT_PADDLE_SCALE);
     g_playerOne_matrix = glm::scale(g_playerOne_matrix, INIT_PADDLE_SCALE);
     
-    if (checkCollision(g_playerOne_position, g_ball_position)) {
-        g_ball_movement.x = 1.0f;
-        g_ball_movement.y = 1.0f;
+    
+    if (numBalls == 2) {
+        g_ball_position2 += g_ball_movement2 * (g_ball_speed * 0.75f) * delta_time;
+        g_ball_matrix2 = glm::translate(g_ball_matrix2, g_ball_position2);
+        g_ball_matrix2 = glm::translate(g_ball_matrix2, glm::vec3(0.0f, 0.25f, 0.0f));
+        g_ball_matrix2 = glm::scale(g_ball_matrix2, INIT_BALL_SCALE);
+        if (checkScore(g_ball_position2) == -1) {
+            player2Score = true;
+            gameProgress = false;
+        }
+        else if(checkScore(g_ball_position2) == 1) {
+            player1Score = true;
+            gameProgress = false;
+        }
+    }
+    else if(numBalls == 3) {
+        g_ball_position2 += g_ball_movement2 * (g_ball_speed * 0.01f) * delta_time;
+        checkYBounds(g_ball_position2, ballUpper2, ballLower2);
+        if (checkScore(g_ball_position2) == -1) {
+            player2Score = true;
+            gameProgress = false;
+        }
+        else if(checkScore(g_ball_position2) == 1) {
+            player1Score = true;
+            gameProgress = false;
+        }
+        g_ball_matrix2 = glm::translate(g_ball_matrix2, g_ball_position2);
+        g_ball_matrix2 = glm::translate(g_ball_matrix2, glm::vec3(0.0f, 0.25f, 0.0f));
+        g_ball_matrix2 = glm::scale(g_ball_matrix2, INIT_BALL_SCALE);
+        
+        g_ball_position3 += g_ball_movement3 * (g_ball_speed * 0.01f) * delta_time;
+        checkYBounds(g_ball_position3, ballUpper3, ballLower3);
+        if (checkScore(g_ball_position3) == -1) {
+            player2Score = true;
+            gameProgress = false;
+        }
+        else if(checkScore(g_ball_position3) == 1) {
+            player1Score = true;
+            gameProgress = false;
+        }
+        g_ball_matrix3 = glm::translate(g_ball_matrix3, g_ball_position3);
+        g_ball_matrix3 = glm::translate(g_ball_matrix3, glm::vec3(0.0f, -0.25f, 0.0f));
+        g_ball_matrix3 = glm::scale(g_ball_matrix3, INIT_BALL_SCALE);
+    }
+    
+    if (checkCollision(g_playerOne_position, g_ball_position1)) {
+        g_ball_movement1.x = 1.0f;
+        g_ball_movement1.y = 1.0f;
         
     }
-    if (checkCollision(g_playerTwo_position, g_ball_position)) {
-        g_ball_movement.x = -1.0f;
-        g_ball_movement.y = -1.0f;
+    if (checkCollision(g_playerTwo_position, g_ball_position1)) {
+        g_ball_movement1.x = -1.0f;
+        g_ball_movement1.y = -1.0f;
     }
-
+    
+    if (numBalls == 2 ){
+        if (checkCollision(g_playerOne_position, g_ball_position2)) {
+            g_ball_movement2.x = 1.0f;
+            g_ball_movement2.y = 1.0f;
+            
+        }
+        if (checkCollision(g_playerTwo_position, g_ball_position2)) {
+            g_ball_movement2.x = -1.0f;
+            g_ball_movement2.y = -1.0f;
+        }
+    }
+    else if (numBalls == 3) {
+        if (checkCollision(g_playerOne_position, g_ball_position2)) {
+            g_ball_movement2.x = 1.0f;
+            g_ball_movement2.y = 1.0f;
+            
+        }
+        if (checkCollision(g_playerTwo_position, g_ball_position2)) {
+            g_ball_movement2.x = -1.0f;
+            g_ball_movement2.y = -1.0f;
+        }
+        
+        if (checkCollision(g_playerOne_position, g_ball_position3)) {
+            g_ball_movement3.x = 1.0f;
+            g_ball_movement3.y = 1.0f;
+            
+        }
+        if (checkCollision(g_playerTwo_position, g_ball_position3)) {
+            g_ball_movement3.x = -1.0f;
+            g_ball_movement3.y = -1.0f;
+        }
+    }
 }
 
 
@@ -614,7 +732,7 @@ void render()
 {
     glClear(GL_COLOR_BUFFER_BIT);
 
-    g_shader_program.set_model_matrix(g_ball_matrix);
+    g_shader_program.set_model_matrix(g_ball_matrix1);
     draw_sprite_from_texture_atlas(&g_shader_program, g_keyboard_texture_id,
                                    42,
                                    KEYBOARD_DIMENSIONS_ROWS, KEYBOARD_DIMENSIONS_COLS);
@@ -629,6 +747,22 @@ void render()
     draw_sprite_from_texture_atlas(&g_shader_program, g_keyboard_extra_texture_id,
                                    20,
                                    KEYBOARD_EXTRA_DIMENSIONS_ROWS,  KEYBOARD_EXTRA_DIMENSIONS_COLS);
+    if (numBalls == 2) {
+        g_shader_program.set_model_matrix(g_ball_matrix2);
+        draw_sprite_from_texture_atlas(&g_shader_program, g_keyboard_texture_id,
+                                       42,
+                                       KEYBOARD_DIMENSIONS_ROWS, KEYBOARD_DIMENSIONS_COLS);
+    }
+    else if (numBalls == 3) {
+        g_shader_program.set_model_matrix(g_ball_matrix2);
+        draw_sprite_from_texture_atlas(&g_shader_program, g_keyboard_texture_id,
+                                       42,
+                                       KEYBOARD_DIMENSIONS_ROWS, KEYBOARD_DIMENSIONS_COLS);
+        g_shader_program.set_model_matrix(g_ball_matrix3);
+        draw_sprite_from_texture_atlas(&g_shader_program, g_keyboard_texture_id,
+                                       42,
+                                       KEYBOARD_DIMENSIONS_ROWS, KEYBOARD_DIMENSIONS_COLS);
+    }
 
     if (player1Score) {
         drawGameOver();
