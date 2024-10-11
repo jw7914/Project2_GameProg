@@ -51,13 +51,11 @@ constexpr int KEYBOARD_DIMENSIONS_ROWS = 14;
 constexpr int KEYBOARD_EXTRA_DIMENSIONS_ROWS = 8;
 constexpr int KEYBOARD_EXTRA_DIMENSIONS_COLS = 4;
 
-constexpr int FONTBANK_SIZE = 16;
-
 GLuint g_keyboard_texture_id;
 GLuint g_keyboard_extra_texture_id;
 GLuint g_font_texture_id;
 
-float g_paddle_speed = 2.0f,
+float g_paddle_speed = 3.0f,
       g_ball_speed = 4.0f;
 
 bool p1Upper = false,
@@ -552,11 +550,11 @@ void process_input()
         }
         if (glm::length(g_ball_movement2) > 1.0f)
         {
-            g_ball_movement1 = glm::normalize(g_ball_movement2);
+            g_ball_movement2 = glm::normalize(g_ball_movement2);
         }
-        if (glm::length(g_ball_movement2) > 1.0f)
+        if (glm::length(g_ball_movement3) > 1.0f)
         {
-            g_ball_movement1 = glm::normalize(g_ball_movement2);
+            g_ball_movement3 = glm::normalize(g_ball_movement3);
         }
     }
     else { // Stop all current movement
@@ -574,10 +572,11 @@ void process_input()
 void update()
 {
     /* DELTA TIME */
-    float ticks = (float) SDL_GetTicks() / MILLISECONDS_IN_SECOND;
+    float ticks = (float)SDL_GetTicks() / MILLISECONDS_IN_SECOND;
     float delta_time = ticks - previous_ticks;
     previous_ticks = ticks;
     
+    // Initialize the game state on the first call
     if (gameStart) {
         startGame();
         gameStart = false;
@@ -585,7 +584,9 @@ void update()
     }
     
     LOG(numBalls);
+    
     /* GAME LOGIC */
+    // Update ball and paddle positions
     g_ball_position1 += g_ball_movement1 * g_ball_speed * delta_time;
     g_playerTwo_position += g_playerTwo_movement * g_paddle_speed * delta_time;
     g_playerOne_position += g_playerOne_movement * g_paddle_speed * delta_time;
@@ -595,122 +596,114 @@ void update()
     checkYBounds(g_playerTwo_position, p2Upper, p2Lower);
     checkYBounds(g_ball_position1, ballUpper1, ballLower1);
     
-    if(ballUpper1) {
+    // Reverse ball direction if it hits upper or lower bounds
+    if (ballUpper1) {
         g_ball_movement1.y = -1.0f;
-    }
-    else if(ballLower1) {
+    } else if (ballLower1) {
         g_ball_movement1.y = 1.0f;
     }
     
-    if (checkScore(g_ball_position1) == -1) {
+    // Check score for the first ball
+    int scoreResult1 = checkScore(g_ball_position1);
+    if (scoreResult1 == -1) {
         player2Score = true;
         gameProgress = false;
-    }
-    else if(checkScore(g_ball_position1) == 1) {
+    } else if (scoreResult1 == 1) {
         player1Score = true;
         gameProgress = false;
     }
     
-    
-    /* Model matrix reset */
+    /* Model matrix transformations */
     g_ball_matrix1 = glm::mat4(1.0f);
-    g_ball_matrix2 = glm::mat4(1.0f);
-    g_ball_matrix3 = glm::mat4(1.0f);
     g_playerOne_matrix = glm::mat4(1.0f);
     g_playerTwo_matrix = glm::mat4(1.0f);
     
-    
-    /* TRANSFORMATIONS */
+    // Transformations
     g_ball_matrix1 = glm::translate(g_ball_matrix1, g_ball_position1);
     g_playerOne_matrix = glm::translate(g_playerOne_matrix, g_playerOne_position);
     g_playerTwo_matrix = glm::translate(g_playerTwo_matrix, g_playerTwo_position);
-    g_playerOne_matrix = glm::rotate(g_playerOne_matrix, glm::radians(-90.0f), glm::vec3(0.0f,0.0f, 1.0f));
-    g_playerTwo_matrix = glm::rotate(g_playerTwo_matrix, glm::radians(90.0f), glm::vec3(0.0f,0.0f, 1.0f));
+    g_playerOne_matrix = glm::rotate(g_playerOne_matrix, glm::radians(-90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+    g_playerTwo_matrix = glm::rotate(g_playerTwo_matrix, glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
     g_ball_matrix1 = glm::scale(g_ball_matrix1, INIT_BALL_SCALE);
     g_playerTwo_matrix = glm::scale(g_playerTwo_matrix, INIT_PADDLE_SCALE);
     g_playerOne_matrix = glm::scale(g_playerOne_matrix, INIT_PADDLE_SCALE);
     
-    
-    if (numBalls == 2) {
+    // Handle additional balls if they exist
+    if (numBalls >= 2) {
         g_ball_position2 += g_ball_movement2 * (g_ball_speed * 0.75f) * delta_time;
-        g_ball_matrix2 = glm::translate(g_ball_matrix2, g_ball_position2);
-        g_ball_matrix2 = glm::translate(g_ball_matrix2, glm::vec3(0.0f, 0.25f, 0.0f));
-        g_ball_matrix2 = glm::scale(g_ball_matrix2, INIT_BALL_SCALE);
-        if (checkScore(g_ball_position2) == -1) {
-            player2Score = true;
-            gameProgress = false;
-        }
-        else if(checkScore(g_ball_position2) == 1) {
-            player1Score = true;
-            gameProgress = false;
-        }
-    }
-    else if(numBalls == 3) {
-        g_ball_position2 += g_ball_movement2 * (g_ball_speed * 0.01f) * delta_time;
         checkYBounds(g_ball_position2, ballUpper2, ballLower2);
-        if (checkScore(g_ball_position2) == -1) {
-            player2Score = true;
-            gameProgress = false;
+        if (ballUpper2) {
+            g_ball_movement2.y = -1.0f;
+        } else if (ballLower2) {
+            g_ball_movement2.y = 1.0f;
         }
-        else if(checkScore(g_ball_position2) == 1) {
-            player1Score = true;
-            gameProgress = false;
-        }
-        g_ball_matrix2 = glm::translate(g_ball_matrix2, g_ball_position2);
-        g_ball_matrix2 = glm::translate(g_ball_matrix2, glm::vec3(0.0f, 0.25f, 0.0f));
-        g_ball_matrix2 = glm::scale(g_ball_matrix2, INIT_BALL_SCALE);
         
-        g_ball_position3 += g_ball_movement3 * (g_ball_speed * 0.01f) * delta_time;
-        checkYBounds(g_ball_position3, ballUpper3, ballLower3);
-        if (checkScore(g_ball_position3) == -1) {
+        int scoreResult2 = checkScore(g_ball_position2);
+        if (scoreResult2 == -1) {
             player2Score = true;
             gameProgress = false;
-        }
-        else if(checkScore(g_ball_position3) == 1) {
+        } else if (scoreResult2 == 1) {
             player1Score = true;
             gameProgress = false;
         }
+        
+        // Transform for the second ball
+        g_ball_matrix2 = glm::mat4(1.0f);
+        g_ball_matrix2 = glm::translate(g_ball_matrix2, g_ball_position2);
+        g_ball_matrix2 = glm::scale(g_ball_matrix2, INIT_BALL_SCALE);
+    }
+    
+    if (numBalls == 3) {
+        g_ball_position3 += g_ball_movement3 * (g_ball_speed * 1.25f) * delta_time;
+        checkYBounds(g_ball_position3, ballUpper3, ballLower3);
+        
+        if (ballUpper3) {
+            g_ball_movement3.y = -1.0f;
+        } else if (ballLower3) {
+            g_ball_movement3.y = 1.0f;
+        }
+        
+        int scoreResult3 = checkScore(g_ball_position3);
+        if (scoreResult3 == -1) {
+            player2Score = true;
+            gameProgress = false;
+        } else if (scoreResult3 == 1) {
+            player1Score = true;
+            gameProgress = false;
+        }
+        
+        // Transform for the third ball
+        g_ball_matrix3 = glm::mat4(1.0f);
         g_ball_matrix3 = glm::translate(g_ball_matrix3, g_ball_position3);
-        g_ball_matrix3 = glm::translate(g_ball_matrix3, glm::vec3(0.0f, -0.25f, 0.0f));
         g_ball_matrix3 = glm::scale(g_ball_matrix3, INIT_BALL_SCALE);
     }
     
+    // Check collisions for the first ball
     if (checkCollision(g_playerOne_position, g_ball_position1)) {
         g_ball_movement1.x = 1.0f;
         g_ball_movement1.y = 1.0f;
-        
     }
     if (checkCollision(g_playerTwo_position, g_ball_position1)) {
         g_ball_movement1.x = -1.0f;
         g_ball_movement1.y = -1.0f;
     }
-    
-    if (numBalls == 2 ){
+
+    // Check collisions for additional balls
+    if (numBalls >= 2) {
         if (checkCollision(g_playerOne_position, g_ball_position2)) {
             g_ball_movement2.x = 1.0f;
             g_ball_movement2.y = 1.0f;
-            
         }
         if (checkCollision(g_playerTwo_position, g_ball_position2)) {
             g_ball_movement2.x = -1.0f;
             g_ball_movement2.y = -1.0f;
         }
     }
-    else if (numBalls == 3) {
-        if (checkCollision(g_playerOne_position, g_ball_position2)) {
-            g_ball_movement2.x = 1.0f;
-            g_ball_movement2.y = 1.0f;
-            
-        }
-        if (checkCollision(g_playerTwo_position, g_ball_position2)) {
-            g_ball_movement2.x = -1.0f;
-            g_ball_movement2.y = -1.0f;
-        }
-        
+    
+    if (numBalls == 3) {
         if (checkCollision(g_playerOne_position, g_ball_position3)) {
             g_ball_movement3.x = 1.0f;
             g_ball_movement3.y = 1.0f;
-            
         }
         if (checkCollision(g_playerTwo_position, g_ball_position3)) {
             g_ball_movement3.x = -1.0f;
@@ -718,6 +711,7 @@ void update()
         }
     }
 }
+
 
 
 void draw_object(glm::mat4 &object_model_matrix, GLuint &object_texture_id)
