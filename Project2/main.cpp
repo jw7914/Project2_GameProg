@@ -17,10 +17,7 @@
 #include <vector>
 #include <ctime>
 #include "cmath"
-// Includes for random
-#include <stdlib.h>
-#include <time.h>
-#include <stdio.h>
+
 
 enum AppStatus { RUNNING, TERMINATED };
 
@@ -247,6 +244,11 @@ int checkScore(glm::vec3 object) {
     return 0;       // no score
 }
 
+float getRandomDirection() {
+    float random = 0.5f + (float)(rand()) / ((float)(RAND_MAX / 0.5f));
+    return (rand() % 2 == 0) ? random : -random;
+}
+
 void startGame() {
     p1Upper = false;
     p2Upper = false;
@@ -266,13 +268,14 @@ void startGame() {
     g_playerOne_position = INIT_PLAYERONE_POS;
     g_playerTwo_position = INIT_PLAYERTWO_POS;
     
-    g_ball_movement1.x = randomVal;
-    g_ball_movement2.x = -randomVal;
-    g_ball_movement3.x = randomVal;
-    g_ball_movement1.y = randomVal;
-    g_ball_movement2.y = -randomVal;
-    g_ball_movement3.y = randomVal;
+    g_ball_movement1.x = getRandomDirection();
+    g_ball_movement1.y = getRandomDirection();
 
+    g_ball_movement2.x = getRandomDirection();
+    g_ball_movement2.y = getRandomDirection();
+
+    g_ball_movement3.x = getRandomDirection();
+    g_ball_movement3.y = getRandomDirection();
 }
 
 void drawGameOver() {
@@ -581,6 +584,7 @@ void update()
     float delta_time = ticks - previous_ticks;
     previous_ticks = ticks;
     
+    randomVal = 0.5 + (float)(rand()) / RAND_MAX / 2;
     // Initialize the game state on the first call
     if (gameStart) {
         startGame();
@@ -638,7 +642,7 @@ void update()
     
     // Handle additional balls if they exist
     if (numBalls >= 2) {
-        g_ball_position2 += g_ball_movement2 * (g_ball_speed * 0.75f) * delta_time;
+        g_ball_position2 += g_ball_movement2 * (g_ball_speed * 0.7f) * delta_time;
         checkYBounds(g_ball_position2, ballUpper2, ballLower2);
         if (ballUpper2) {
             g_ball_movement2.y = -randomVal;
