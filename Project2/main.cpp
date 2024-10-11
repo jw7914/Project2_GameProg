@@ -17,6 +17,10 @@
 #include <vector>
 #include <ctime>
 #include "cmath"
+// Includes for random
+#include <stdlib.h>
+#include <time.h>
+#include <stdio.h>
 
 enum AppStatus { RUNNING, TERMINATED };
 
@@ -55,8 +59,9 @@ GLuint g_keyboard_texture_id;
 GLuint g_keyboard_extra_texture_id;
 GLuint g_font_texture_id;
 
-float g_paddle_speed = 3.0f,
-      g_ball_speed = 4.0f;
+float g_paddle_speed = 7.0f,
+      g_ball_speed = 4.0f,
+      randomVal = 0.5 + (float)(rand()) / RAND_MAX / 2;
 
 bool p1Upper = false,
      p2Upper = false,
@@ -260,12 +265,13 @@ void startGame() {
     player2Score = false;
     g_playerOne_position = INIT_PLAYERONE_POS;
     g_playerTwo_position = INIT_PLAYERTWO_POS;
-    g_ball_position1 = INIT_BALL_POS1;
-    g_ball_position2 = INIT_BALL_POS2;
-    g_ball_position3 = INIT_BALL_POS3;
-    g_ball_movement1.x = 1.0f;
-    g_ball_movement2.x = -1.0f;
-    g_ball_movement3.x = 1.0f;
+    
+    g_ball_movement1.x = randomVal;
+    g_ball_movement2.x = -randomVal;
+    g_ball_movement3.x = randomVal;
+    g_ball_movement1.y = randomVal;
+    g_ball_movement2.y = -randomVal;
+    g_ball_movement3.y = randomVal;
 
 }
 
@@ -571,7 +577,6 @@ void process_input()
 
 void update()
 {
-    /* DELTA TIME */
     float ticks = (float)SDL_GetTicks() / MILLISECONDS_IN_SECOND;
     float delta_time = ticks - previous_ticks;
     previous_ticks = ticks;
@@ -582,9 +587,12 @@ void update()
         gameStart = false;
         gameProgress = true;
     }
-    
-    LOG(numBalls);
-    
+    if (!gameProgress) {
+        g_ball_position1 = INIT_BALL_POS1;
+        g_ball_position2 = INIT_BALL_POS2;
+        g_ball_position3 = INIT_BALL_POS3;
+    }
+        
     /* GAME LOGIC */
     // Update ball and paddle positions
     g_ball_position1 += g_ball_movement1 * g_ball_speed * delta_time;
@@ -633,9 +641,9 @@ void update()
         g_ball_position2 += g_ball_movement2 * (g_ball_speed * 0.75f) * delta_time;
         checkYBounds(g_ball_position2, ballUpper2, ballLower2);
         if (ballUpper2) {
-            g_ball_movement2.y = -1.0f;
+            g_ball_movement2.y = -randomVal;
         } else if (ballLower2) {
-            g_ball_movement2.y = 1.0f;
+            g_ball_movement2.y = randomVal;
         }
         
         int scoreResult2 = checkScore(g_ball_position2);
@@ -654,13 +662,13 @@ void update()
     }
     
     if (numBalls == 3) {
-        g_ball_position3 += g_ball_movement3 * (g_ball_speed * 1.25f) * delta_time;
+        g_ball_position3 += g_ball_movement3 * (g_ball_speed * 0.5f) * delta_time;
         checkYBounds(g_ball_position3, ballUpper3, ballLower3);
         
         if (ballUpper3) {
-            g_ball_movement3.y = -1.0f;
+            g_ball_movement3.y = -randomVal;
         } else if (ballLower3) {
-            g_ball_movement3.y = 1.0f;
+            g_ball_movement3.y = randomVal;
         }
         
         int scoreResult3 = checkScore(g_ball_position3);
@@ -680,34 +688,34 @@ void update()
     
     // Check collisions for the first ball
     if (checkCollision(g_playerOne_position, g_ball_position1)) {
-        g_ball_movement1.x = 1.0f;
-        g_ball_movement1.y = 1.0f;
+        g_ball_movement1.x = randomVal;
+        g_ball_movement1.y = randomVal;
     }
     if (checkCollision(g_playerTwo_position, g_ball_position1)) {
-        g_ball_movement1.x = -1.0f;
-        g_ball_movement1.y = -1.0f;
+        g_ball_movement1.x = -randomVal;
+        g_ball_movement1.y = -randomVal;
     }
 
     // Check collisions for additional balls
     if (numBalls >= 2) {
         if (checkCollision(g_playerOne_position, g_ball_position2)) {
-            g_ball_movement2.x = 1.0f;
-            g_ball_movement2.y = 1.0f;
+            g_ball_movement2.x = randomVal;
+            g_ball_movement2.y = randomVal;
         }
         if (checkCollision(g_playerTwo_position, g_ball_position2)) {
-            g_ball_movement2.x = -1.0f;
-            g_ball_movement2.y = -1.0f;
+            g_ball_movement2.x = -randomVal;
+            g_ball_movement2.y = -randomVal;
         }
     }
     
     if (numBalls == 3) {
         if (checkCollision(g_playerOne_position, g_ball_position3)) {
-            g_ball_movement3.x = 1.0f;
-            g_ball_movement3.y = 1.0f;
+            g_ball_movement3.x = randomVal;
+            g_ball_movement3.y = randomVal;
         }
         if (checkCollision(g_playerTwo_position, g_ball_position3)) {
-            g_ball_movement3.x = -1.0f;
-            g_ball_movement3.y = -1.0f;
+            g_ball_movement3.x = -randomVal;
+            g_ball_movement3.y = -randomVal;
         }
     }
 }
