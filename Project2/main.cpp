@@ -58,15 +58,16 @@ GLuint g_keyboard_texture_id;
 GLuint g_keyboard_extra_texture_id;
 GLuint g_font_texture_id;
 
-float g_paddle_speed = 1.75f,
-      g_ball_speed = 2.0f;
+float g_paddle_speed = 2.0f,
+      g_ball_speed = 4.0f;
 bool p1Upper = false,
      p2Upper = false,
      p1Lower = false,
      p2Lower = false,
      ballLower = false,
      ballUpper = false,
-     playerInput = false,
+     gameStart = false,
+     gameProgress = false,
      intialDirection = true,
      twoPlayerMode = true,
      player1Score = false,
@@ -93,6 +94,9 @@ float previous_ticks = 0.0f;
 
 glm::vec3 INIT_PADDLE_SCALE = glm::vec3(1.0f, 0.25f, 0.0f);
 glm::vec3 INIT_BALL_SCALE = glm::vec3(0.3f, 0.3f, 0.0f);
+glm::vec3 INIT_PLAYERONE_POS = glm::vec3(-4.5f, 0.0f, 0.0f);
+glm::vec3 INIT_PLAYERTWO_POS = glm::vec3(4.5f, 0.0f, 0.0f);
+glm::vec3 INIT_BALL_POS = glm::vec3(0.0f, 0.0f, 0.0f);
 
 glm::vec3 g_ball_position = glm::vec3(0.0f, 0.0f, 0.0f);
 glm::vec3 g_playerOne_position = glm::vec3(-4.5f, 0.0f, 0.0f);
@@ -115,6 +119,7 @@ void draw_object(glm::mat4 &object_model_matrix, GLuint &object_texture_id);
 void checkYBounds(glm::vec3 object, bool &upper, bool &lower);
 bool checkCollision(glm::vec3 object1, glm::vec3 object2);
 int checkScore(glm::vec3 object);
+void startGame();
 
 void draw_sprite_from_texture_atlas(ShaderProgram *shaderProgram, GLuint texture_id, int index, int rows, int cols)
 {
@@ -281,12 +286,30 @@ bool checkCollision(glm::vec3 object1, glm::vec3 object2) {
 
 int checkScore(glm::vec3 object) {
     if (object.x > 5.0f) {
-        return 1;   // player 2 scored
+        return 1;   // player 1 scored
     }
     else if (object.x < -5.0f) {
-        return -1;  // player 1 scored
+        return -1;  // player 2 scored
     }
     return 0;       // no score
+}
+
+void startGame() {
+    p1Upper = false;
+    p2Upper = false;
+    p1Lower = false;
+    p2Lower = false;
+    ballLower = false;
+    ballUpper = false;
+    gameProgress = false;
+    intialDirection = true;
+    twoPlayerMode = true;
+    player1Score = false;
+    player2Score = false;
+    g_playerOne_position = INIT_PLAYERONE_POS;
+    g_playerTwo_position = INIT_PLAYERTWO_POS;
+    g_ball_position = INIT_BALL_POS;
+    g_ball_movement.x = 1.0f;
 }
 
 
@@ -352,8 +375,17 @@ void process_input()
                 switch (event.key.keysym.sym)
                 {
                     case SDLK_q: g_app_status = TERMINATED; break;
-                    case SDLK_SPACE: playerInput = true; break;
-                    case SDLK_t: twoPlayerMode = !twoPlayerMode; break;
+                    case SDLK_t:
+                        if (gameProgress) {
+                            twoPlayerMode = !twoPlayerMode;
+                        }
+                        break;
+                    case SDLK_SPACE:
+                        if (!gameProgress) {
+                            gameStart = true;
+                        }
+                        
+                        break;
                     default: break;
                 }
             default: break;
@@ -362,7 +394,7 @@ void process_input()
 
     const Uint8 *key_state = SDL_GetKeyboardState(NULL);
     
-    if (!player1Score && !player2Score){ //No inputs after a player wins
+    if (gameProgress) {
         if (twoPlayerMode) { // Player contorl
             g_playerOne_movement = glm::vec3(0.0f);
             intialDirection = true;
@@ -413,6 +445,7 @@ void process_input()
     else { // Stop all current movement
         g_playerOne_movement = glm::vec3(0.0f);
         g_playerTwo_movement = glm::vec3(0.0f);
+        g_ball_movement = glm::vec3(0.0f);
     }
     
 }
@@ -424,6 +457,12 @@ void update()
     float ticks = (float) SDL_GetTicks() / MILLISECONDS_IN_SECOND;
     float delta_time = ticks - previous_ticks;
     previous_ticks = ticks;
+    
+    if (gameStart) {
+        startGame();
+        gameStart = false;
+        gameProgress = true;
+    }
     
     /* GAME LOGIC */
     g_ball_position += g_ball_movement * g_ball_speed * delta_time;
@@ -442,11 +481,13 @@ void update()
         g_ball_movement.y = 1.0f;
     }
     
-    if (checkScore(g_ball_position) == 1) {
+    if (checkScore(g_ball_position) == -1) {
         player2Score = true;
+        gameProgress = false;
     }
-    else if(checkScore(g_ball_position) == -1) {
+    else if(checkScore(g_ball_position) == 1) {
         player1Score = true;
+        gameProgress = false;
     }
     
     
@@ -505,6 +546,18 @@ void render()
     draw_sprite_from_texture_atlas(&g_shader_program, g_keyboard_extra_texture_id,
                                    20,
                                    KEYBOARD_EXTRA_DIMENSIONS_ROWS,  KEYBOARD_EXTRA_DIMENSIONS_COLS);
+    if (player1Score) {
+        draw_text(&g_shader_program, g_font_texture_id, "Player One Wins", 0.5f, 0.05f,
+                  glm::vec3(-3.0f, 3.0f, 0.0f));
+        draw_text(&g_shader_program, g_font_texture_id, "Press Space To Replay", 0.5f, 0.05f,
+                  glm::vec3(-3.0f, 1.0f, 0.0f));
+    }
+    else if (player2Score) {
+        draw_text(&g_shader_program, g_font_texture_id, "Player Two Wins", 0.5f, 0.05f,
+                  glm::vec3(-3.0f, 3.0f, 0.0f));
+        draw_text(&g_shader_program, g_font_texture_id, "Press Space To Replay", 0.5f, 0.05f,
+                  glm::vec3(-3.0f, 1.0f, 0.0f));
+    }
     
 
     SDL_GL_SwapWindow(g_display_window);
