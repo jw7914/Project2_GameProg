@@ -12,6 +12,7 @@
 **RULES**
 - Toggling 1 and 2 player modes can only happen after a game is started
 - Ball selection can only happen on start screen (before space is pressed)
+- No inputs taken for players if game is not started
 
 **ADDITIONAL**
 - Balls have different speeds each additional ball added is slower than the previous
