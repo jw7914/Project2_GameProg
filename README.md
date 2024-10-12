@@ -20,5 +20,4 @@
 - Two player mode is default / One player mode will just cause other paddle to go side to side
 
 **DEMO**
-<iframe src="https://drive.google.com/file/d/1QeZWz-yoKd6Q05i0RcddLBJKlZzAIpbw/preview" width="640" height="480"></iframe>
-[DEMO LINK](https://drive.google.com/file/d/1QeZWz-yoKd6Q05i0RcddLBJKlZzAIpbw/view?t=44)
+[Watch the Demo]()
